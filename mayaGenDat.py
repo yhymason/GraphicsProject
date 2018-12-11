@@ -214,21 +214,48 @@ def extractJointsPx(camname, joint_names, getJointCoord, resln_h=512, startFrame
 
 ## ================= END Utility functions ======================= ##
 
-# current model __tda_out_of_the_gravity_miku_v1_download___by_chocofudge98-d80twfi
-# do not use unless you know who to credit!
-
-# joints for a particular 3D model
-joint_names = ['tiptoe_left','tiptoe_right','knee_left','knee_right','elbow_right']
-getJointCoord = {}
-getJointCoord['tiptoe_left'] = (lambda : cmds.pointPosition('U_Char_0.vtx[29091]'))
-getJointCoord['tiptoe_right'] = (lambda: cmds.pointPosition('U_Char_0.vtx[28428]'))
-getJointCoord['knee_left'] = (lambda: [0.5*(cmds.pointPosition('U_Char_0.vtx[1207]')[0]+cmds.pointPosition('U_Char_0.vtx[1093]')[0]),0.5*(cmds.pointPosition('U_Char_0.vtx[1207]')[1]+cmds.pointPosition('U_Char_0.vtx[1093]')[1]),0.5*(cmds.pointPosition('U_Char_0.vtx[1207]')[2]+cmds.pointPosition('U_Char_0.vtx[1093]')[2])])
-getJointCoord['knee_right'] = (lambda: [0.5*(cmds.pointPosition('U_Char_0.vtx[2432]')[0]+cmds.pointPosition('U_Char_0.vtx[2474]')[0]),0.5*(cmds.pointPosition('U_Char_0.vtx[2432]')[1]+cmds.pointPosition('U_Char_0.vtx[2474]')[1]),0.5*(cmds.pointPosition('U_Char_0.vtx[2432]')[2]+cmds.pointPosition('U_Char_0.vtx[2474]')[2])])
-getJointCoord['elbow_right'] = (lambda: [0.5*(cmds.pointPosition('U_Char_0.vtx[3072]')[0]+cmds.pointPosition('U_Char_0.vtx[3118]')[0]),0.5*(cmds.pointPosition('U_Char_0.vtx[3072]')[1]+cmds.pointPosition('U_Char_0.vtx[3118]')[1]),0.5*(cmds.pointPosition('U_Char_0.vtx[3072]')[2]+cmds.pointPosition('U_Char_0.vtx[3118]')[2])])
 
 
-camname = 'camera1'
+
+## ================= Model Information ======================= ##
+# see credits.md for model credits
+
+# tda_out_of_the_gravity_miku_v1 by chocofudge98
+joint_names_anime = ['body_upper','neck','head','nose_tip','nose_root','arm_left','elbow_left','wrist_left','thumb_left','arm_right','elbow_right','wrist_right','thumb_right','leg_left','knee_left','ankle_left','tiptoe_left','leg_right','knee_right','ankle_right','tiptoe_right']
+getJointCoord_anime = {}
+getJointCoord_anime['body_upper'] = (lambda: cmds.joint('No_12_joint_Torso2',position=True,query=True))
+getJointCoord_anime['neck'] = (lambda: cmds.joint('No_18_joint_Neck',position=True,query=True))
+getJointCoord_anime['head'] = (lambda: cmds.joint('No_19_joint_Head',position=True,query=True))
+getJointCoord_anime['nose_tip'] = (lambda: cmds.pointPosition('U_Char_1.vtx[298]'))
+getJointCoord_anime['nose_root'] = (lambda: cmds.pointPosition('U_Char_1.vtx[274]'))
+getJointCoord_anime['arm_left'] = (lambda: cmds.joint('No_61_joint_LeftArm',position=True,query=True))
+getJointCoord_anime['elbow_left'] = (lambda: cmds.joint('No_68_joint_LeftElbow',position=True,query=True))
+getJointCoord_anime['wrist_left'] = (lambda: cmds.joint('No_73_joint_LeftWrist',position=True,query=True))
+getJointCoord_anime['thumb_left'] = (lambda: cmds.joint('No_306_i_joint_LeftThumb0M',position=True,query=True))
+getJointCoord_anime['arm_right'] = (lambda: cmds.joint('No_23_joint_RightArm',position=True,query=True))
+getJointCoord_anime['elbow_right'] = (lambda: cmds.joint('No_30_joint_RightElbow',position=True,query=True))
+getJointCoord_anime['wrist_right'] = (lambda: cmds.joint('No_35_joint_RightWrist',position=True,query=True))
+getJointCoord_anime['thumb_right'] = (lambda: cmds.joint('No_307_i_joint_RightThumb0M',position=True,query=True))
+getJointCoord_anime['leg_left'] = (lambda: cmds.joint('No_106_joint_LeftHip',position=True,query=True))
+getJointCoord_anime['knee_left'] = (lambda: cmds.joint('No_107_joint_LeftKnee',position=True,query=True))
+getJointCoord_anime['ankle_left'] = (lambda: cmds.joint('No_108_joint_LeftFoot',position=True,query=True))
+getJointCoord_anime['tiptoe_left'] = (lambda : cmds.pointPosition('U_Char_0.vtx[29091]'))
+getJointCoord_anime['leg_right'] = (lambda: cmds.joint('No_102_joint_RightHip',position=True,query=True))
+getJointCoord_anime['knee_right'] = (lambda: cmds.joint('No_103_joint_RightKnee',position=True,query=True))
+getJointCoord_anime['ankle_right'] = (lambda: cmds.joint('No_104_joint_RightFoot',position=True,query=True))
+getJointCoord_anime['tiptoe_right'] = (lambda: cmds.pointPosition('U_Char_0.vtx[28428]'))
+
+# joint_names = ['tiptoe_left','tiptoe_right','knee_left','knee_right','elbow_right']
+# getJointCoord = {}
+# getJointCoord['tiptoe_left'] = (lambda : cmds.pointPosition('U_Char_0.vtx[29091]'))
+# getJointCoord['tiptoe_right'] = (lambda: cmds.pointPosition('U_Char_0.vtx[28428]'))
+# getJointCoord['knee_left'] = (lambda: [0.5*(cmds.pointPosition('U_Char_0.vtx[1207]')[0]+cmds.pointPosition('U_Char_0.vtx[1093]')[0]),0.5*(cmds.pointPosition('U_Char_0.vtx[1207]')[1]+cmds.pointPosition('U_Char_0.vtx[1093]')[1]),0.5*(cmds.pointPosition('U_Char_0.vtx[1207]')[2]+cmds.pointPosition('U_Char_0.vtx[1093]')[2])])
+# getJointCoord['knee_right'] = (lambda: [0.5*(cmds.pointPosition('U_Char_0.vtx[2432]')[0]+cmds.pointPosition('U_Char_0.vtx[2474]')[0]),0.5*(cmds.pointPosition('U_Char_0.vtx[2432]')[1]+cmds.pointPosition('U_Char_0.vtx[2474]')[1]),0.5*(cmds.pointPosition('U_Char_0.vtx[2432]')[2]+cmds.pointPosition('U_Char_0.vtx[2474]')[2])])
+# getJointCoord['elbow_right'] = (lambda: [0.5*(cmds.pointPosition('U_Char_0.vtx[3072]')[0]+cmds.pointPosition('U_Char_0.vtx[3118]')[0]),0.5*(cmds.pointPosition('U_Char_0.vtx[3072]')[1]+cmds.pointPosition('U_Char_0.vtx[3118]')[1]),0.5*(cmds.pointPosition('U_Char_0.vtx[3072]')[2]+cmds.pointPosition('U_Char_0.vtx[3118]')[2])])
+
+
+camname = 'camera2'
 # prints joint pixel locations to console
 # position your camera properly before calling
 # make sure to give the right resln_h (picture height in pixels)
-extractJointsPx(camname, joint_names, getJointCoord, resln_h=512, startFrame=1, endFrame=7800, everyXFrames=2000)
+extractJointsPx(camname, joint_names_anime, getJointCoord_anime, resln_h=512, startFrame=1, endFrame=7800, everyXFrames=2000)
