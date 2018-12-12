@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 import math
 import json
-
+import os
 ## ================= Utility functions ========================== ##
 # ----------------- rotate vecter in order xyz ------------------ #
 def rotxyz(vec,thetas):
@@ -286,12 +286,14 @@ for i in range(start_frame, end_frame+1, frame_per_img):
     json_obj['scale_provided_other'] = {"_ArrayType_": "double", "_ArraySize_": [0, 0], "_ArrayData_": None}
     json_obj['annolist_index'] = 0.0
     if len(str(i)) < frame_padding:
-        json_obj['img_paths'] = project_name + '0' + i +'.jpeg'
+        json_obj['img_paths'] = project_name + '0' + str(i) +'.jpeg'
     else:
-        json_obj['img_paths'] = project_name + i +'.jpeg'
+        json_obj['img_paths'] = project_name + str(i) +'.jpeg'
     json_obj['numOtherPeople'] = 0.0
     json_list.append(json_obj)
 
-with open( project_name + '.json', 'w') as outfile:
+out_path = os.path.abspath('C:/Users/yhyma/Desktop/535 Synthetic/' + project_name + '.json')
+
+with open( out_path, 'w') as outfile:
     json.dump(json_list, outfile)
 
