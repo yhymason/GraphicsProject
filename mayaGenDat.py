@@ -2,8 +2,6 @@ import maya.cmds as cmds
 import math
 import json
 import os
-## ================= Utility functions ========================== ##
-# ----------------- rotate vecter in order xyz ------------------ #
 def rotxyz(vec,thetas):
     v = rotx(vec,thetas[0])
     v = roty(v,thetas[1])
@@ -167,38 +165,56 @@ assert(math.fabs(testcorners['ul'][1]-ul[1]+20) < 1e-10)
 assert(math.fabs(testcorners['ul'][2]-ul[2]-30) < 1e-10)
 
 # ----------------- extract joint pixel locations ---------------------- #
-def extractJointsPx(camname, joint_names, getJointCoord, resln_h=512, startFrame=1, endFrame=7800, everyXFrames=2000):
-    camcoord = cmds.camera(camname, position=True, query=True)
-    camrots = cmds.camera(camname, query=True, rotation=True)
-    hangle = cmds.camera(camname, horizontalFieldOfView=True, query=True)
-    vangle = cmds.camera(camname, verticalFieldOfView=True, query=True)
-    # aspect ratio
-    ar = math.tan(math.radians(hangle/2)) / math.tan(math.radians(vangle/2))
-    # resln_h = 512    # in pixels
-    resln_w = ar*resln_h
-    ncp = cmds.camera(camname, nearClipPlane=True, query=True)
-
-    camdir = rotxyz([0,0,-1],camrots)    # camera started out pointing in negative z direction
-    camup  = rotxyz([0,1,0],camrots)    # camera started out standing up
-    # find 4 corners of canvas
-    corners = ncpCorners(ncp, hangle, vangle, camdir, camup, camcoord)
-    ul = corners['ul']
-    ur = corners['ur']
-    ll = corners['ll']
-    lr = corners['lr']
-    # startFrame = 1
-    # endFrame = 7800
-    # everyXFrames = 2000
+def extractJointsPx(camname, joint_names, getJointCoord, outfile='', image_height=0, image_width=0, startFrame=0, endFrame=0, everyXFrames=1):
+    if (image_height==0) or (image_width==0):
+        print("Please enter image height and width in pixels")
+        return
+    image_ar = float(image_width) / float(image_height)
     dictionary = {}
     for i in range(startFrame,endFrame+1,everyXFrames):
         # sets frame number
         cmds.currentTime(i)
-        #print("Frame: %d"%(i))
+        print("Frame: %d"%(i))
         frame_num = i
+        if outfile != '':
+            # with open(outfile, 'a+') as file:
+            #     file.write('%d' % i)
+            #     file.write('\n')
+            print()
+        # camera parameters
+        camcoord = cmds.camera(camname, position=True, query=True)
+        camrots = cmds.camera(camname, query=True, rotation=True)
+        hangle = cmds.camera(camname, horizontalFieldOfView=True, query=True)
+        vangle = cmds.camera(camname, verticalFieldOfView=True, query=True)
+        # aspect ratio
+        ar = math.tan(math.radians(hangle/2)) / math.tan(math.radians(vangle/2))
+        ncp = cmds.camera(camname, nearClipPlane=True, query=True)
+        scale = cmds.camera(camname, cameraScale=True, query=True)
+        if scale != 1:
+            ncp = ncp/scale
+            hangle = 2*math.degrees(math.atan(scale*math.tan(math.radians(hangle/2))))
+            vangle = 2*math.degrees(math.atan(scale*math.tan(math.radians(vangle/2))))
+
+        camdir = rotxyz([0,0,-1],camrots)    # camera started out pointing in negative z direction
+        camup  = rotxyz([0,1,0],camrots)    # camera started out standing up
+        # find 4 corners of canvas
+        corners = ncpCorners(ncp, hangle, vangle, camdir, camup, camcoord)
+        ul = corners['ul']
+        ur = corners['ur']
+        ll = corners['ll']
+        lr = corners['lr']
+
+        fitResolutionGate = cmds.camera(camname, query=True, filmFit=True)
+        if fitResolutionGate == 'fill':
+            if image_ar <= ar:
+                fitResolutionGate = 'vertical'
+            else:
+                fitResolutionGate = 'horizontal'
         joints_framei = {}
         for jn in joint_names:
             # read world coordinates
-            joints_framei[jn] = (lambda: cmds.joint(getJointCoord[jn],position=True,query=True))()
+            fucn = (lambda: cmds.joint(getJointCoord[jn],position=True,query=True))
+            joints_framei[jn] = fucn()
             ptcoord = joints_framei[jn]
             # 'project' onto nearClipPlane (ncp)
             ray = [ptcoord[0]-camcoord[0], ptcoord[1]-camcoord[1], ptcoord[2]-camcoord[2]]
@@ -209,17 +225,25 @@ def extractJointsPx(camname, joint_names, getJointCoord, resln_h=512, startFrame
             ncpXvec = [(ur[0]-ul[0])/ncpWidth,(ur[1]-ul[1])/ncpWidth,(ur[2]-ul[2])/ncpWidth]
             ncpYvec = [(lr[0]-ur[0])/ncpHeight,(lr[1]-ur[1])/ncpHeight,(lr[2]-ur[2])/ncpHeight]
             ncpRayvec = [camcoord[0]+ray[0]-ul[0],camcoord[1]+ray[1]-ul[1],camcoord[2]+ray[2]-ul[2]]
-            px = resln_w*(ncpRayvec[0]*ncpXvec[0]+ncpRayvec[1]*ncpXvec[1]+ncpRayvec[2]*ncpXvec[2])/ncpWidth
-            py = resln_h*(ncpRayvec[0]*ncpYvec[0]+ncpRayvec[1]*ncpYvec[1]+ncpRayvec[2]*ncpYvec[2])/ncpHeight
-            #print('Joint %s has pixel location x=%d and y=%d'%(jn,int(round(px)),int(round(py))))
+            px = 0
+            py = 0
+            if fitResolutionGate == 'vertical':
+                x_fraction = (ncpRayvec[0]*ncpXvec[0]+ncpRayvec[1]*ncpXvec[1]+ncpRayvec[2]*ncpXvec[2])/ncpWidth
+                px = image_width*(0.5+(x_fraction-0.5)*ar/image_ar)
+                py = image_height*(ncpRayvec[0]*ncpYvec[0]+ncpRayvec[1]*ncpYvec[1]+ncpRayvec[2]*ncpYvec[2])/ncpHeight
+            elif fitResolutionGate == 'horizontal':
+                px = image_width*(ncpRayvec[0]*ncpXvec[0]+ncpRayvec[1]*ncpXvec[1]+ncpRayvec[2]*ncpXvec[2])/ncpWidth
+                y_fraction = (ncpRayvec[0]*ncpYvec[0]+ncpRayvec[1]*ncpYvec[1]+ncpRayvec[2]*ncpYvec[2])/ncpHeight
+                py = image_height*(0.5+(y_fraction-0.5)*image_ar/ar)
+            print('Joint %s has pixel location x=%d and y=%d'%(jn,int(round(px)),int(round(py))))
             joint_name = jn
             dictionary[(frame_num, joint_name)] = [int(round(px)),  int(round(py))]
+            if outfile != '':
+                # with open(outfile, 'a+') as file:
+                #     file.write('%s:%d,%d' % (jn,px,py))
+                #     file.write('\n')
+                print()
     return dictionary
-
-## ================= END Utility functions ======================= ##
-
-
-
 
 ## ================= Model Information ======================= ##
 # see credits.md for model credits
@@ -245,15 +269,19 @@ camname = 'persp'
 # prints joint pixel locations to console
 # position your camera properly before calling
 # make sure to give the right resln_h (picture height in pixels)
-dictionary = extractJointsPx(camname, joint_names_anime, getJointCoord_anime, resln_h=256, startFrame=505, endFrame=508, everyXFrames=1)
-
-json_list = []
 start_frame = 505
 end_frame = 508
 frame_per_img = 1
-img_height = 256
+img_height = 512
 img_width = 512
 frame_padding = 4
+dictionary = extractJointsPx(camname, joint_names_anime, getJointCoord_anime, '', 
+image_height=img_height, 
+image_width=img_width, 
+startFrame=start_frame, 
+endFrame=end_frame, 
+everyXFrames=frame_per_img)
+json_list = []
 project_name = 'Miku_Hatsune+Bad_Romance' # file path to the rendered img folder (i.e. model name + vmd name)
 for i in range(start_frame, end_frame+1, frame_per_img):
     json_obj = {}
