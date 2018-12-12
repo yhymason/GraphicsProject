@@ -1,5 +1,6 @@
 import maya.cmds as cmds
 import math
+import json
 
 ## ================= Utility functions ========================== ##
 # ----------------- rotate vecter in order xyz ------------------ #
@@ -188,16 +189,16 @@ def extractJointsPx(camname, joint_names, getJointCoord, resln_h=512, startFrame
     # startFrame = 1
     # endFrame = 7800
     # everyXFrames = 2000
-
+    dictionary = {}
     for i in range(startFrame,endFrame+1,everyXFrames):
         # sets frame number
         cmds.currentTime(i)
-        print("Frame: %d"%(i))
-
+        #print("Frame: %d"%(i))
+        frame_num = i
         joints_framei = {}
         for jn in joint_names:
             # read world coordinates
-            joints_framei[jn] = getJointCoord[jn]
+            joints_framei[jn] = (lambda: cmds.joint(getJointCoord[jn],position=True,query=True))()
             ptcoord = joints_framei[jn]
             # 'project' onto nearClipPlane (ncp)
             ray = [ptcoord[0]-camcoord[0], ptcoord[1]-camcoord[1], ptcoord[2]-camcoord[2]]
@@ -210,7 +211,10 @@ def extractJointsPx(camname, joint_names, getJointCoord, resln_h=512, startFrame
             ncpRayvec = [camcoord[0]+ray[0]-ul[0],camcoord[1]+ray[1]-ul[1],camcoord[2]+ray[2]-ul[2]]
             px = resln_w*(ncpRayvec[0]*ncpXvec[0]+ncpRayvec[1]*ncpXvec[1]+ncpRayvec[2]*ncpXvec[2])/ncpWidth
             py = resln_h*(ncpRayvec[0]*ncpYvec[0]+ncpRayvec[1]*ncpYvec[1]+ncpRayvec[2]*ncpYvec[2])/ncpHeight
-            print('Joint %s has pixel location x=%d and y=%d'%(jn,int(round(px)),int(round(py))))
+            #print('Joint %s has pixel location x=%d and y=%d'%(jn,int(round(px)),int(round(py))))
+            joint_name = jn
+            dictionary[(frame_num, joint_name)] = [int(round(px)),  int(round(py))]
+    return dictionary
 
 ## ================= END Utility functions ======================= ##
 
@@ -234,11 +238,60 @@ for i in range(len(joint_names_model)):
 getJointCoord_anime = {}
 
 for j in range(len(joint_names_anime)):
-    val = (lambda: cmds.joint(joint_names_model[j],position=True,query=True))()
+    val = joint_names_model[j]
     getJointCoord_anime[joint_names_anime[j]] = val
 
 camname = 'persp'
 # prints joint pixel locations to console
 # position your camera properly before calling
 # make sure to give the right resln_h (picture height in pixels)
-extractJointsPx(camname, joint_names_anime, getJointCoord_anime, resln_h=1024, startFrame=505, endFrame=508, everyXFrames=1)
+dictionary = extractJointsPx(camname, joint_names_anime, getJointCoord_anime, resln_h=256, startFrame=505, endFrame=508, everyXFrames=1)
+
+json_list = []
+start_frame = 505
+end_frame = 508
+frame_per_img = 1
+img_height = 256
+img_width = 512
+frame_padding = 4
+project_name = 'Miku_Hatsune+Bad_Romance' # file path to the rendered img folder (i.e. model name + vmd name)
+for i in range(start_frame, end_frame+1, frame_per_img):
+    json_obj = {}
+    json_obj['isValidation'] = 0.0
+    json_obj['joint_others'] = {"_ArrayType_": "double", "_ArraySize_": [0, 0], "_ArrayData_": None}
+    json_obj['people_index'] = 1.0
+    json_obj['scale_provided'] = img_height/200.0
+    json_obj['joint_self'] = [0] * 16
+    json_obj['joint_self'][0] = dictionary[(i, 'ankle_right')]
+    json_obj['joint_self'][1] = dictionary[(i, 'knee_right')]
+    json_obj['joint_self'][2] = dictionary[(i, 'leg_right')]
+    json_obj['joint_self'][3] = dictionary[(i, 'leg_left')]
+    json_obj['joint_self'][4] = dictionary[(i, 'knee_left')]
+    json_obj['joint_self'][5] = dictionary[(i, 'ankle_left')]
+    json_obj['joint_self'][6] = [(dictionary[(i, 'leg_right')][0] + dictionary[(i, 'leg_left')][0])/2,
+    (dictionary[(i, 'leg_right')][1] + dictionary[(i, 'leg_left')][1])/2]
+    json_obj['joint_self'][7] = dictionary[(i, 'body_upper')]
+    json_obj['joint_self'][8] = dictionary[(i, 'neck')]
+    json_obj['joint_self'][9] = dictionary[(i, 'head')]
+    json_obj['joint_self'][10] = dictionary[(i, 'wrist_right')]
+    json_obj['joint_self'][11] = dictionary[(i, 'elbow_right')]
+    json_obj['joint_self'][12] = dictionary[(i, 'arm_right')]
+    json_obj['joint_self'][13] = dictionary[(i, 'arm_left')]
+    json_obj['joint_self'][14] = dictionary[(i, 'elbow_left')]
+    json_obj['objpos_other'] = {"_ArrayType_": "double", "_ArraySize_": [0, 0], "_ArrayData_": None}
+    json_obj['img_width'] = img_width
+    json_obj['dataset'] = "Synthetic"
+    json_obj['img_height'] = img_height
+    json_obj['objpos'] = dictionary[(i, 'body_upper')]
+    json_obj['scale_provided_other'] = {"_ArrayType_": "double", "_ArraySize_": [0, 0], "_ArrayData_": None}
+    json_obj['annolist_index'] = 0.0
+    if len(str(i)) < frame_padding:
+        json_obj['img_paths'] = project_name + '0' + i +'.jpeg'
+    else:
+        json_obj['img_paths'] = project_name + i +'.jpeg'
+    json_obj['numOtherPeople'] = 0.0
+    json_list.append(json_obj)
+
+with open( project_name + '.json', 'w') as outfile:
+    json.dump(json_list, outfile)
+
